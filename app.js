@@ -115,7 +115,7 @@ app.post("/ussd", async (req, res) => {
 
       try {
         const geminiResponse = await axios.post(
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:streamGenerateContent?key=" +
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
             process.env.GEMINI_API_KEY,
           {
             contents: [{ parts: [{ text: buildPrompt(question) }] }],
