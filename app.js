@@ -51,7 +51,7 @@ const seedProcurement = {
 };
 
 const truckRequest = (tons) => {
-  return `CON For ${tons} tons, we will send a truck from TransCargo Ltd. Please call +254730123456 for further details.`;
+  return `CON Ku toni ${tons}, imodoka izava muri TransCargo Ltd. Hamagara +254730123456 kubaza ibindi bisobanuro.`;
 };
 
 // Handle USSD
@@ -68,50 +68,50 @@ app.post("/ussd", async (req, res) => {
 
   switch (session.stage) {
     case 0:
-      response = `CON Welcome to SmartFarm AI
-1. Ask a farming question
-2. Seed procurement
-3. Market linkages
-4. Agronomist service
-5. Exit`;
+      response = `CON Murakaza neza kuri Hinga AI
+1. Baza ikibazo kijyanye n’ubuhinzi
+2. Kugura imbuto
+3. Guhuza abahinzi n’isoko
+4. Serivisi y’umuhinzi w’inzobere
+5. Sohoka`;
       session.stage = 1;
       break;
 
     case 1:
       if (input === "1") {
-        response = `CON Enter your farming question (max 160 characters):`;
+        response = `CON Andika ikibazo cyawe kijyanye n’ubuhinzi:`;
         session.stage = 2;
       } else if (input === "2") {
-        response = `CON Choose seed type:
-1. Maize
-2. Tomato
-3. Rice`;
+        response = `CON Hitamo ubwoko bw’imbuto:
+1. Ibigori
+2. Inyanya
+3. Umuceri`;
         session.stage = 3;
       } else if (input === "3") {
-        response = `CON How many tons of produce do you have? (Enter the number):`;
+        response = `CON Ufite toni zingahe z’umusaruro? (Andika umubare):`;
         session.stage = 4;
       } else if (input === "4") {
-        response = `CON Requesting an agronomist service. Please wait... We'll connect you shortly.`;
+        response = `CON Turimo gushaka umuhinzi w’inzobere. Tegereza gato... Tuzahita tuguhuza.`;
         session.stage = 0;
         delete sessions[sessionId]; // End session
         break;
       } else if (input === "5") {
-        response = `END Thank you for using SmartFarm AI.`;
+        response = `END Murakoze gukoresha Hinga AI.`;
         delete sessions[sessionId];
       } else {
-        response = `CON Invalid choice. Try again:
-1. Ask a farming question
-2. Seed procurement
-3. Market linkages
-4. Agronomist service
-5. Exit`;
+        response = `CON Hitamo neza:
+1. Baza ikibazo kijyanye n’ubuhinzi
+2. Kugura imbuto
+3. Kuhuza abahinzi n’isoko
+4. Serivisi y’umuhinzi w’inzobere
+5. Sohoka`;
       }
       break;
 
     case 2:
       // Process farming question and call Gemini API
       const question = input;
-      session.stage = 0; // Reset to start
+      session.stage = 0;
 
       try {
         const geminiResponse = await axios.post(
@@ -128,10 +128,10 @@ app.post("/ussd", async (req, res) => {
         response = `END ${shortAnswer}`;
       } catch (err) {
         console.error("Gemini API error:", err);
-        response = `END Sorry, we couldn't get a response. Try again later.`;
+        response = `END Tubabarire, ntitwashoboye kubona igisubizo. Ongera ugerageze nyuma.`;
       }
 
-      delete sessions[sessionId]; // End session
+      delete sessions[sessionId];
       break;
 
     case 3:
@@ -144,26 +144,31 @@ app.post("/ussd", async (req, res) => {
       const selectedSeed = seedType[input] || "Other";
       if (seedProcurement[selectedSeed]) {
         const { location, phone } = seedProcurement[selectedSeed];
-        response = `END For ${selectedSeed} seeds, contact ${location} at ${phone}.`;
+        const localName = {
+          "Maize": "ibigori",
+          "Tomato": "inyanya",
+          "Rice": "umuceri",
+        };
+        response = `END Kubona imbuto za ${localName[selectedSeed]}, hamagara ${location} kuri ${phone}.`;
       } else {
-        response = `END Invalid seed type. Try again.`;
+        response = `END Ubwoko bw’imbuto ntibubonetse. Ongera ugerageze.`;
       }
-      delete sessions[sessionId]; // End session
+      delete sessions[sessionId];
       break;
 
     case 4:
       // Market linkages and truck request
       const tons = parseInt(input);
       if (isNaN(tons)) {
-        response = `CON Please enter a valid number of tons.`;
+        response = `CON Andika umubare nyawo w’toni z’umusaruro.`;
       } else {
         response = truckRequest(tons);
       }
-      delete sessions[sessionId]; // End session
+      delete sessions[sessionId];
       break;
 
     default:
-      response = `END Thank you for using SmartFarm AI.`;
+      response = `END Murakoze gukoresha Hinga AI.`;
       delete sessions[sessionId];
       break;
   }
