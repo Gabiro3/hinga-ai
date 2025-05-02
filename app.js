@@ -37,8 +37,8 @@ Answer:
 // Dummy data for services
 const seedProcurement = {
   "Maize": {
-    location: "Seed Supply Co., Nairobi",
-    phone: "+254700123456",
+    location: "Seed Supply Co., Muhanga",
+    phone: "+250780123456",
   },
   "Tomato": {
     location: "AgroSeeds Ltd., Kisumu",
@@ -176,6 +176,77 @@ app.post("/ussd", async (req, res) => {
   res.set("Content-Type", "text/plain");
   res.send(response);
 });
+const chatHistory = {}; // Temporary in-memory storage
+
+app.post("/sms", async (req, res) => {
+  const { from, text } = req.body;
+
+  if (!text || !from) {
+    return res.status(400).send("Missing 'from' or 'text'");
+  }
+
+  const userInput = text.trim();
+
+  // Initialize history if not present
+  if (!chatHistory[from]) {
+    chatHistory[from] = [];
+  }
+
+  // Add user input to chat history
+  chatHistory[from].push({ role: "farmer", message: userInput });
+
+  // Limit history to last 5 exchanges (10 messages)
+  if (chatHistory[from].length > 10) {
+    chatHistory[from] = chatHistory[from].slice(-10);
+  }
+
+  // Build conversational prompt using history
+  const historyPrompt = chatHistory[from]
+    .map((entry, index) => {
+      const speaker = entry.role === "farmer" ? "Farmer" : "AI";
+      return `${speaker}: "${entry.message}"`;
+    })
+    .join("\n");
+
+  const prompt = `
+You are a helpful AI assistant supporting African farmers via SMS.
+Keep replies short (max 480 characters) and simple. Respond in the same language as the farmer.
+
+Here’s the recent conversation:
+${historyPrompt}
+
+AI:
+`;
+
+  try {
+    const geminiResponse = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+      }
+    );
+
+    const answer = geminiResponse.data.candidates[0].content.parts[0].text;
+    const finalResponse = answer.slice(0, 480); // SMS limit
+
+    // Save AI response to history
+    chatHistory[from].push({ role: "ai", message: finalResponse });
+
+    // Send SMS back to user
+    const sms = africastalking.SMS;
+    await sms.send({
+      to: [from],
+      message: finalResponse,
+      from: "51708", // or use your short code
+    });
+
+    res.status(200).send("SMS sent with history");
+  } catch (err) {
+    console.error("SMS with history error:", err.response?.data || err.message);
+    res.status(500).send("Failed to send SMS");
+  }
+});
+
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
