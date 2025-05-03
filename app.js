@@ -209,8 +209,9 @@ app.post("/sms", async (req, res) => {
     .join("\n");
 
   const prompt = `
-You are a helpful AI assistant supporting African farmers via SMS.
-Keep replies short (max 480 characters) and simple. Respond in the same language as the farmer.
+You are a helpful AI assistant supporting African farmers via SMS. The farmer might ask you information about the weather or any other
+demographic-related enquiry. Take into account the user's question and the context of the conversation.
+Keep replies short, clear (max 500 characters) and simple. Respond in the same language as the farmer.
 
 Here’s the recent conversation:
 ${historyPrompt}
